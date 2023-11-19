@@ -42,17 +42,19 @@ for i in range(1, 19):
     equipo = Equipos(i, LigaMx[i]["nombre"], historico)
     equipos.append(equipo)
 
+random.shuffle(equipos)
+
 ## A partir de aqui las funciones provienen de la pagina http://www.scielo.org.bo/scielo.php?script=sci_arttext&pid=S1683-07892005000100004 la cual tiene las formulas de probabilidad aqui utilizadas
 
 def probEmpate(pJugados, pEmpatados): #probabilidad de que los equipos empaten en base a los partidos jugados y los partidos empatados 
     if ( pJugados == 0 or pEmpatados == 0 ): #en caso de que no se haya jugado ningun partido 
         PE = 20.4
     else:
-        PE = min(0.15,max(0.25,(pEmpatados/pJugados))) #aqui se calcula la probabilidad de que los equipos empaten en base a la cantidad de empates registrados y la cantidad de partidos jugados
+        PE = min(random.uniform(0.15, 0.25),max(random.uniform(0.15, 0.25),(pEmpatados/pJugados))) #aqui se calcula la probabilidad de que los equipos empaten en base a la cantidad de empates registrados y la cantidad de partidos jugados
     return PE
 
 def probLocal(pJugados, vLocal, equipoA, equipoB):
-    Pa = max(0.5,(vLocal/pJugados)) #Probabilidad de que resulte vencedor el equipo local por su localia
+    Pa = max(random.uniform(0.3, 0.5),(vLocal/pJugados)) #Probabilidad de que resulte vencedor el equipo local por su localia
     Py = equipoA.rendimiento_history / (equipoB.rendimiento_history + equipoA.rendimiento_history) #Py es la probabilidad de que el local sea ganador por el rendimiento historico de los equipos
     if(equipoB.rendimiento() + equipoA.rendimiento() == 0):
         Pb = Py
@@ -127,9 +129,9 @@ for i in range(18):
 
 # Ordenar la lista de equipos según los puntos
 equipos_ordenados = sorted(equipos, key=obtener_puntos_equipo, reverse=True)
+print(f"{'Equipo':<20} {'Puntos':<10} {'Victorias':<10} {'Empates':<10} {'Derrotas':<10}")
 for i in range(18):
-    print(f"{equipos_ordenados[i].nombre} puntos {equipos_ordenados[i].getPuntos()}")
-    #print(equipos[i].pJugadosE - 1)
+    print(f"{equipos_ordenados[i].nombre:<20} {equipos_ordenados[i].getPuntos():<10} {equipos_ordenados[i].victorias:<10} {equipos_ordenados[i].empates:<10} {equipos_ordenados[i].derrotas:<10}")
 
 #simulación liguilla
 
