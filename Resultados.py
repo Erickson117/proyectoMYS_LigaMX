@@ -1,48 +1,6 @@
 import random
-
-class Equipos:
-    def __init__(self, id_equipo, nombre, rendimiento_history):
-        self.empates,self.victorias, self.derrotas = 0,0,0
-        self.pJugadosE = 1
-        self.id_equipo = id_equipo
-        self.nombre = nombre
-        self.rendimiento_history = rendimiento_history
-    def getPuntos(self): 
-        return (self.victorias*3) + (self.empates)
-    def rendimiento(self):
-        puntos = (self.victorias*3) + (self.empates)
-        return puntos / self.pJugadosE
-
-#creacion de los equipos
-#Esta lista tiene un historico de puntos de los ultimos cuatro torneos de la Liga mexicana de futbol
-LigaMx = {
-        1: {"nombre": "Cruz Azul", "puntos": 107},
-        2: {"nombre": "America", "puntos": 138},
-        3: {"nombre": "Chivas", "puntos": 110},
-        4: {"nombre": "Pumas", "puntos": 86},
-        5: {"nombre": "Tigres", "puntos": 111},
-        6: {"nombre": "Rayados", "puntos": 127},
-        7: {"nombre": "San Luis", "puntos": 77},
-        8: {"nombre": "Mazatlan", "puntos": 71},
-        9: {"nombre": "Queretaro", "puntos": 77},
-        10: {"nombre": "Santos", "puntos": 88},
-        11: {"nombre": "Puebla", "puntos": 99},
-        12: {"nombre": "Xolos", "puntos": 73},
-        13: {"nombre": "Toluca", "puntos": 94},
-        14: {"nombre": "Pachuca", "puntos": 114},
-        15: {"nombre": "Leon", "puntos": 100},
-        16: {"nombre": "Necaxa", "puntos": 63},
-        17: {"nombre": "Juarez", "puntos": 59}, 
-        18: {"nombre": "Atlas", "puntos": 90}
-        }
-equipos = [] #Este arreglo contendra todos los equipos de la liga mx los crearemos usando su nombre y un rendimiento historico
-
-for i in range(1, 19):
-    historico = float(int(LigaMx[i]["puntos"]) / 68) #el rendimiento historico se calcula dividiendo la cantidad de puntos entre el numero de partidos 
-    equipo = Equipos(i, LigaMx[i]["nombre"], historico)
-    equipos.append(equipo)
-
-random.shuffle(equipos)
+from Equipos import Equipos
+from liga_mx import LigaMx
 
 ## A partir de aqui las funciones provienen de la pagina http://www.scielo.org.bo/scielo.php?script=sci_arttext&pid=S1683-07892005000100004 la cual tiene las formulas de probabilidad aqui utilizadas
 
@@ -82,7 +40,102 @@ def seleccionarGanador(equipoA, equipoB): #esta funcion usa valores aleatorios p
 def obtener_puntos_equipo(equipo): #Esta funcion es para ordenar los equipos por su puntuaje
     return equipo.getPuntos()
     
+#simulación liguilla
 
+def liguilla(equipos_ordenados): #Esta funcion genera los encuentros entre los equipos clasificados para obtener un campeon
+    equipos_liguilla = equipos_ordenados[:6] #Aqui se obtienen los equipos clasificados de manera directa
+    equipos_liguilla = play_in(equipos_liguilla,equipos_ordenados[6],equipos_ordenados[7],equipos_ordenados[8],equipos_ordenados[9]) #Aqui se obtienen los equipos del play in
+    print(f"\n---------------Liguilla------------")
+    print("\nCuartos de final")
+    cuartos = [] # aqui se almacenaran los equipos resultantes de los cuartos de final
+    for i in range(4):
+        print(f"   {equipos_liguilla[i].nombre} VS {equipos_liguilla[7-i].nombre}")
+        ganador = seleccionarGanador(equipos_liguilla[i],equipos_liguilla[7-i]) #El equipo más bajo de los que quedan juega contra el más alto
+        if(ganador == "Empate"): #En caso de empate pasa el equipo mejor posicionado
+            cuartos.append(equipos_liguilla[i])
+            print(f"   Ganador: {equipos_liguilla[i].nombre}")
+        else: #En caso de que el resultado no sea empate pasa el equipo ganador
+            cuartos.append(ganador)
+            print(f"   Ganador: {ganador.nombre}")
+    cuartos = sorted(cuartos, key=obtener_puntos_equipo, reverse=True)
+    
+    print("\nSemifinales")
+    semis = [] #Aqui se almacenaran los ganadores de las semifinales
+    for i in range(2):
+        print(f"   {cuartos[i].nombre} VS {cuartos[3-i].nombre}")
+        ganador = seleccionarGanador(cuartos[i],cuartos[3-i]) #al igual que en los cuartos de final se enfrentan los equipos top con los low
+        if(ganador == "Empate"): #En caso de empate pasa el mejor posicionado 
+            semis.append(cuartos[i])
+            print(f"   Ganador: {cuartos[i].nombre}")
+        else: #En caso de que no sea empate pasa el vencedor 
+            semis.append(ganador)
+            print(f"   Ganador: {ganador.nombre}")
+    print(f"\nFINAL")
+    print(f"   {semis[0].nombre} VS {semis[1].nombre}")
+    campeonIda = seleccionarGanador(semis[0],semis[1]) #obtenemos el campeon de ida
+    campeonVuelta = seleccionarGanador(semis[1],semis[0]) #Obtenemos el campeon de la vuelta
+
+    #El siguiente while esta diseñado para evitar 3 situacionbes que no nos darian un campeon, empate en ambos juegos o victorias de ambos equipos 
+    #si sucede se repetira hasta obtener un resultado valido que nos de un campeon
+    while((campeonIda == "Empate" and campeonVuelta == "Empate")and(campeonIda == semis[0] and campeonVuelta == semis[1])and(campeonIda == semis[1] and campeonVuelta == semis[0])):
+        #print(f"campeon ida {campeonIda}, campeon vuelta {campeonVuelta}")
+        campeonIda = seleccionarGanador(semis[0],semis[1])
+        campeonVuelta = seleccionarGanador(semis[1],semis[0])
+    
+    #Si en la ida se empato el partido quiere decir que en el ganador de la vuelta es el equipo campeon
+    if(campeonIda == "Empate"):
+        campeon = campeonVuelta
+    else: #En caso contrario quiere decir que el equipo que gano en la ida empato en la vuelta o que gano ambas finales por lo tanto el campeon de Ida sera el campeon
+        campeon = campeonIda
+    
+    print("\nEl campeon es: ", campeon.nombre) #Imprime a nuestro campeon.
+
+    
+
+def play_in(equipos_liguilla,equipoA,equipoB,equipoC,equipoD): #El play in es un sistema que la liga mx usa para obtener los participantes de cuartos que no clasificaron directo
+    print(f"Play In")
+    #Determinar el ganador de los lugares 7 y 8
+    print(f"   {equipoA.nombre} VS {equipoB.nombre}")
+    ganadorAB = seleccionarGanador(equipoA,equipoB) #Seleccionamos un ganador de los equipos que terminaron en la posiucion 7 y 8 de la tabla general
+    if (ganadorAB =="Empate"): # en caso de ser empate el equipo mejor posicionado pasa a cuartos 
+        ganadorAB = equipoA
+        equipos_liguilla.append(ganadorAB)
+        perdedorAB = equipoB #El perdedor se guarda ya que tiene otra oportunidad de clasificarse al enfrentar al ganador del emfrentamiento del equipo 9 y 10
+    else:
+        equipos_liguilla.append(ganadorAB) # En caso de que el resultado no sea empate agregamos al vencedor a los cuartos de final
+        if(ganadorAB == equipoA): #en caso de sea el equipo A el B se almacenara como el equipo perdedor
+            perdedorAB = equipoB
+        else:
+            perdedorAB = equipoA #caso contrario el A sera asignado al equipo perdedor
+    print(f"   Gana: {ganadorAB.nombre} ")
+    print(f"   Espera rival: {perdedorAB.nombre}")
+    #Determinar el ganador de los equipos 9 y 10
+    print(f"   {equipoC.nombre}  VS {equipoD.nombre}")
+    ganadorCD = seleccionarGanador(equipoC,equipoD) #Obtenemos un ganador en la serie del 9 contra el 10
+    if (ganadorCD == "Empate"): #En caso de empate el equipo que enfrentara al perdedor de la ronda anterior sera el mejor posicionado, caso contrario se mantiene el valor anterior
+        ganadorCD = equipoC
+    print(f"   Gana: {ganadorCD.nombre}")
+    #Determinar el ganador entre el perdedro de AB y el ganador de CD
+    print(f"   {perdedorAB.nombre} VS {ganadorCD.nombre} ")
+
+    ultimo_clasi = seleccionarGanador(perdedorAB,ganadorCD)
+    if (ultimo_clasi =="Empate"): #En caso de empate tiene prioridad el perdedor de la primera ronda al estar mejor posicionado en la tabla
+        ultimo_clasi = perdedorAB
+        equipos_liguilla.append(ultimo_clasi)
+    else:
+        equipos_liguilla.append(ultimo_clasi) #En caso de que el resultado no sea un empate agregamos al vencedor 
+    print(f"   Gana: {ultimo_clasi.nombre} ")
+    return equipos_liguilla #enviamos la nueva lista con los equipos clasificados del play in
+
+
+equipos = [] #Este arreglo contendra todos los equipos de la liga mx los crearemos usando su nombre y un rendimiento historico
+
+for i in range(1, 19):
+    historico = float(int(LigaMx[i]["puntos"]) / 68) #el rendimiento historico se calcula dividiendo la cantidad de puntos entre el numero de partidos 
+    equipo = Equipos(i, LigaMx[i]["nombre"], historico)
+    equipos.append(equipo)
+
+random.shuffle(equipos)
 
 #simulacion para las 17 fechas del futbol mexicano.
 pJugados = 1
@@ -132,75 +185,5 @@ equipos_ordenados = sorted(equipos, key=obtener_puntos_equipo, reverse=True)
 print(f"{'Equipo':<20} {'Puntos':<10} {'Victorias':<10} {'Empates':<10} {'Derrotas':<10}")
 for i in range(18):
     print(f"{equipos_ordenados[i].nombre:<20} {equipos_ordenados[i].getPuntos():<10} {equipos_ordenados[i].victorias:<10} {equipos_ordenados[i].empates:<10} {equipos_ordenados[i].derrotas:<10}")
-
-#simulación liguilla
-
-def liguilla(equipos_ordenados): #Esta funcion genera los encuentros entre los equipos clasificados para obtener un campeon
-    equipos_liguilla = equipos_ordenados[:6] #Aqui se obtienen los equipos clasificados de manera directa
-    equipos_liguilla = play_in(equipos_liguilla,equipos_ordenados[6],equipos_ordenados[7],equipos_ordenados[8],equipos_ordenados[9]) #Aqui se obtienen los equipos del play in
-
-    cuartos = [] # aqui se almacenaran los equipos resultantes de los cuartos de final
-    for i in range(4):
-        ganador = seleccionarGanador(equipos_liguilla[i],equipos_liguilla[7-i]) #El equipo más bajo de los que quedan juega contra el más alto
-        if(ganador == "Empate"): #En caso de empate pasa el equipo mejor posicionado
-            cuartos.append(equipos_liguilla[i])
-        else: #En caso de que el resultado no sea empate pasa el equipo ganador
-            cuartos.append(ganador)
-    cuartos = sorted(cuartos, key=obtener_puntos_equipo, reverse=True)
-    
-    semis = [] #Aqui se almacenaran los ganadores de las semifinales
-    for i in range(2):
-        ganador = seleccionarGanador(equipos_liguilla[i],equipos_liguilla[3-i]) #al igual que en los cuartos de final se enfrentan los equipos top con los low
-        if(ganador == "Empate"): #En caso de empate pasa el mejor posicionado 
-            semis.append(equipos_liguilla[i])
-        else: #En caso de que no sea empate pasa el vencedor 
-            semis.append(ganador)
-    
-    campeonIda = seleccionarGanador(semis[0],semis[1]) #obtenemos el campeon de ida
-    campeonVuelta = seleccionarGanador(semis[1],semis[0]) #Obtenemos el campeon de la vuelta
-
-    #El siguiente while esta diseñado para evitar 3 situacionbes que no nos darian un campeon, empate en ambos juegos o victorias de ambos equipos 
-    #si sucede se repetira hasta obtener un resultado valido que nos de un campeon
-    while((campeonIda == "Empate" and campeonVuelta == "Empate")and(campeonIda == semis[0] and campeonVuelta == semis[1])and(campeonIda == semis[1] and campeonVuelta == semis[0])):
-        campeonIda = seleccionarGanador(semis[0],semis[1])
-        campeonVuelta = seleccionarGanador(semis[1],semis[0])
-    
-    #Si en la ida se empato el partido quiere decir que en el ganador de la vuelta es el equipo campeon
-    if(campeonIda == "Empate"):
-        campeon = campeonVuelta
-    else: #En caso contrario quiere decir que el equipo que gano en la ida empato en la vuelta o que gano ambas finales por lo tanto el campeon de Ida sera el campeon
-        campeon = campeonIda
-    
-    print("El campeon es: ", campeon.nombre) #Imprime a nuestro campeon.
-
-    
-
-def play_in(equipos_liguilla,equipoA,equipoB,equipoC,equipoD): #El play in es un sistema que la liga mx usa para obtener los participantes de cuartos que no clasificaron directo
-    
-    #Determinar el ganador de los lugares 7 y 8
-    ganadorAB = seleccionarGanador(equipoA,equipoB) #Seleccionamos un ganador de los equipos que terminaron en la posiucion 7 y 8 de la tabla general
-    if (ganadorAB =="Empate"): # en caso de ser empate el equipo mejor posicionado pasa a cuartos 
-        equipos_liguilla.append(equipoA)
-        perdedorAB = equipoB #El perdedor se guarda ya que tiene otra oportunidad de clasificarse al enfrentar al ganador del emfrentamiento del equipo 9 y 10
-    else:
-        equipos_liguilla.append(ganadorAB) # En caso de que el resultado no sea empate agregamos al vencedor a los cuartos de final
-        if(ganadorAB == equipoA): #en caso de sea el equipo A el B se almacenara como el equipo perdedor
-            perdedorAB = equipoB
-        else:
-            perdedorAB = equipoA #caso contrario el A sera asignado al equipo perdedor
-
-    #Determinar el ganador de los equipos 9 y 10
-    ganadorCD = seleccionarGanador(equipoC,equipoD) #Obtenemos un ganador en la serie del 9 contra el 10
-    if (ganadorCD == "Empate"): #En caso de empate el equipo que enfrentara al perdedor de la ronda anterior sera el mejor posicionado, caso contrario se mantiene el valor anterior
-        ganadorCD = equipoC
-    
-    #Determinar el ganador entre el perdedro de AB y el ganador de CD
-    ultimo_clasi = seleccionarGanador(perdedorAB,ganadorCD)
-    if (ultimo_clasi =="Empate"): #En caso de empate tiene prioridad el perdedor de la primera ronda al estar mejor posicionado en la tabla
-        equipos_liguilla.append(perdedorAB)
-    else:
-        equipos_liguilla.append(ultimo_clasi) #En caso de que el resultado no sea un empate agregamos al vencedor 
-
-    return equipos_liguilla #enviamos la nueva lista con los equipos clasificados del play in
 
 liguilla(equipos_ordenados)# llamamos a la funcion liguilla usando los equipos ordenados 
