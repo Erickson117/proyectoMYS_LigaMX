@@ -130,3 +130,72 @@ equipos_ordenados = sorted(equipos, key=obtener_puntos_equipo, reverse=True)
 for i in range(18):
     print(f"{equipos_ordenados[i].nombre} puntos {equipos_ordenados[i].getPuntos()}")
     #print(equipos[i].pJugadosE - 1)
+
+#simulación liguilla
+
+def liguilla(equipos_ordenados):
+    equipos_liguilla = equipos_ordenados[:6]
+    equipos_liguilla = play_in(equipos_liguilla,equipos_ordenados[6],equipos_ordenados[7],equipos_ordenados[8],equipos_ordenados[9])
+
+    cuartos = []
+    for i in range(4):
+        ganador = seleccionarGanador(equipos_liguilla[i],equipos_liguilla[7-i])
+        if(ganador == "Empate"):
+            cuartos.append(equipos_liguilla[i])
+        else:
+            cuartos.append(ganador)
+    cuartos = sorted(cuartos, key=obtener_puntos_equipo, reverse=True)
+    
+    semis = []
+    for i in range(2):
+        ganador = seleccionarGanador(equipos_liguilla[i],equipos_liguilla[3-i])
+        if(ganador == "Empate"):
+            semis.append(equipos_liguilla[i])
+        else:
+            semis.append(ganador)
+    
+    campeonIda = seleccionarGanador(semis[0],semis[1])
+    campeonVuelta = seleccionarGanador(semis[1],semis[0])
+
+    while((campeonIda == "Empate" and campeonVuelta == "Empate")and(campeonIda == semis[0] and campeonVuelta == semis[1])and(campeonIda == semis[1] and campeonVuelta == semis[0])):
+        campeonIda = seleccionarGanador(semis[0],semis[1])
+        campeonVuelta = seleccionarGanador(semis[1],semis[0])
+    
+    if(campeonIda == "Empate"):
+        campeon = campeonVuelta
+    else:
+        campeon = campeonIda
+    
+    print("El campeon es: ", campeon.nombre)
+
+    
+
+def play_in(equipos_liguilla,equipoA,equipoB,equipoC,equipoD):
+    
+    #Determinar el ganador de los lugares 7 y 8
+    ganadorAB = seleccionarGanador(equipoA,equipoB)
+    if (ganadorAB =="Empate"):
+        equipos_liguilla.append(equipoA)
+        perdedorAB = equipoB
+    else:
+        equipos_liguilla.append(ganadorAB)
+        if(ganadorAB == equipoA):
+            perdedorAB = equipoB
+        else:
+            perdedorAB = equipoA
+
+    #Determinar el ganador de los equipos 9 y 10
+    ganadorCD = seleccionarGanador(equipoC,equipoD)
+    if (ganadorCD == "Empate"):
+        ganadorCD = equipoC
+    
+    #Determinar el ganador entre el perdedro de AB y el ganador de CD
+    ultimo_clasi = seleccionarGanador(perdedorAB,ganadorCD)
+    if (ultimo_clasi =="Empate"):
+        equipos_liguilla.append(perdedorAB)
+    else:
+        equipos_liguilla.append(ultimo_clasi)
+
+    return equipos_liguilla
+
+liguilla(equipos_ordenados)
